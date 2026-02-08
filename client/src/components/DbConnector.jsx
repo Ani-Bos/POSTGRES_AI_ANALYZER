@@ -1,8 +1,50 @@
 import React from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 // psql -U username -d dbname -h localhost -p 5444
 const DbConnector = () => {
-  return (
+  const navigate = useNavigate();
+  const [host, setHost] = useState("");
+  const [dbname, setDbname] = useState(""); 
+  const [port, setPort] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+
+  const requestToDatabse = async () => {
+    try {
+      const resp = await fetch("http://localhost:5000/connect", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          host,
+          database: dbname,
+          port: Number(port),
+          username,
+          password,
+        }),
+      });
+
+      const res = await resp.json();
+      console.log(res);
+
+      if (resp.ok) {
+        navigate("/QueryPlanner");
+      } else {
+        alert(res.error || "Connection failed");
+      }
+    } catch (err) {
+      console.error("Request failed:", err);
+    }
+  };
+
+  const HandleSubmit = (e)=> {
+     e.preventDefault();
+    requestToDatabse();
+  }
+    return (
     <div className="relative min-h-screen bg-gray-900 overflow-hidden">
       {/* Gradient background */}
       <div aria-hidden="true" className="absolute inset-0 -z-10">
@@ -33,7 +75,10 @@ const DbConnector = () => {
               </label>
               <input
                 type="text"
-                id="host"
+                  id="host"
+                  onChange={(e) => {
+                    setHost(e.target.value);
+                  }}
                 placeholder="localhost"
                 className="w-full rounded-md bg-gray-900 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 required
@@ -49,7 +94,10 @@ const DbConnector = () => {
               </label>
               <input
                 type="text"
-                id="dbname"
+                  id="dbname"
+                  onChange={(e) => {
+                    setDbname(e.target.value);
+                  }}
                 placeholder="my_database"
                 className="w-full rounded-md bg-gray-900 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 required
@@ -65,7 +113,10 @@ const DbConnector = () => {
               </label>
               <input
                 type="text"
-                id="port"
+                  id="port"
+                  onChange={(e) => {
+                    setPort(e.target.value)
+                  }}
                 placeholder="5432"
                 className="w-full rounded-md bg-gray-900 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 required
@@ -82,7 +133,10 @@ const DbConnector = () => {
               </label>
               <input
                 type="text"
-                id="username"
+                  id="username"
+                  onChange={(e) => {
+                    setUsername(e.target.value)
+                  }}
                 placeholder="postgres"
                 className="w-full rounded-md bg-gray-900 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 required
@@ -99,7 +153,10 @@ const DbConnector = () => {
               </label>
               <input
                 type="password"
-                id="password"
+                  id="password"
+                  onChange={(e) => {
+                    setPassword(e.target.value)
+                  }}
                 placeholder="••••••••"
                 className="w-full rounded-md bg-gray-900 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 required
@@ -108,7 +165,8 @@ const DbConnector = () => {
 
 
             <button
-              type="submit"
+                type="submit"
+                onClick={HandleSubmit}
               className="w-full rounded-md bg-indigo-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-400 transition focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               Connect Database
