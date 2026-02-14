@@ -8,4 +8,4 @@ share
 Lib
 Library
 include
-.env
+env
