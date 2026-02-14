@@ -8,4 +8,4 @@ share
 Lib
 Library
 include
-/FlaskServer/.env
+FlaskServer/env/.env
