@@ -13,6 +13,7 @@ const DbConnector = () => {
 
   const requestToDatabse = async () => {
     try {
+      // console.log({ host, dbname, port, username, password });
       const resp = await fetch("http://localhost:5000/connect", {
         method: "POST",
         headers: {
@@ -26,7 +27,7 @@ const DbConnector = () => {
           password,
         }),
       });
-
+      
       const res = await resp.json();
       console.log(res);
 
@@ -46,7 +47,6 @@ const DbConnector = () => {
   }
     return (
     <div className="relative min-h-screen bg-gray-900 overflow-hidden">
-      {/* Gradient background */}
       <div aria-hidden="true" className="absolute inset-0 -z-10">
         <div className="absolute top-[-10rem] left-1/2 -translate-x-1/2 h-[32rem] w-[32rem] rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 opacity-30 blur-3xl" />
         <div className="absolute bottom-[-10rem] right-1/2 translate-x-1/2 h-[28rem] w-[28rem] rounded-full bg-gradient-to-tr from-pink-500 to-indigo-500 opacity-20 blur-3xl" />

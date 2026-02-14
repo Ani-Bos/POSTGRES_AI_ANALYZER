@@ -16,7 +16,7 @@ def connectTODB():
     try:
         connection = dbConnection.connectTODB()
         connection.close()
-        return jsonify({"status": "Connected to DB", "connection": connection})
+        return jsonify({"status": "Successfully connected to DB"}),200
     except Exception as e:
         print("Error while connection to postgres DB",e)
         return jsonify({"status": "Failed to connect to DB", "error": str(e)})
