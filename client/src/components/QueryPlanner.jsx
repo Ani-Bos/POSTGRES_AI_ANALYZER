@@ -1,52 +1,62 @@
-import React from 'react'
+import React, { useState } from "react";
 
 const QueryPlanner = () => {
+  const [query, setQuery] = useState("");
+  const [plan, setPlan] = useState("");
+  const [analysis, setAnalysis] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const resp = await fetch("http://localhost:5000/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query }),
+    });
+
+    const data = await resp.json();
+    console.log(data)
+    setPlan(data.plan);
+    setAnalysis(data.analysis);
+  };
+
   return (
-    <div className="relative min-h-screen bg-gray-900 overflow-hidden">
-      <div aria-hidden="true" className="absolute inset-0 -z-10">
-        <div className="absolute top-[-10rem] left-1/2 -translate-x-1/2 h-[32rem] w-[32rem] rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 opacity-30 blur-3xl" />
-        <div className="absolute bottom-[-10rem] right-1/2 translate-x-1/2 h-[28rem] w-[28rem] rounded-full bg-gradient-to-tr from-pink-500 to-indigo-500 opacity-20 blur-3xl" />
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="w-full max-w-md bg-white/5 p-8 rounded-xl">
+        <h2 className="text-white text-2xl text-center">Query Plan Analyzer</h2>
+
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Enter SQL query"
+            className="w-full p-2 bg-gray-800 text-white rounded"
+          />
+
+          <button
+            type="submit"
+            className="w-full bg-indigo-500 p-2 rounded text-white"
+          >
+            Analyze ✨
+          </button>
+        </form>
+
+        {plan && (
+          <div className="mt-4 text-gray-300">
+            <h3>Query Plan:</h3>
+            <pre>{JSON.stringify(plan, null, 2)}</pre>
+          </div>
+        )}
+
+        {analysis && (
+          <div className="mt-4 text-gray-300">
+            <h3>AI Analysis:</h3>
+            <pre>{analysis}</pre>
+          </div>
+        )}
       </div>
-
-      {/* Content */}
-      <main className="flex min-h-screen items-center justify-center px-6">
-        {/* Glass Card */}
-        <div className="w-full max-w-md rounded-xl bg-white/5 backdrop-blur-lg border border-white/10 shadow-xl p-8">
-          <h2 className="text-2xl font-semibold text-white text-center">
-            Query Plan Analyzer
-          </h2>
-
-
-          <form className="mt-8 space-y-5">
-            <div>
-              <label
-                htmlFor="query"
-                className="block mb-1 text-sm font-medium text-gray-300"
-              >
-                Enter your Query
-              </label>
-              <input
-                type="text"
-                id="query"
-                placeholder="Enter the SQl query to analyze"
-                className="w-full rounded-md bg-gray-900 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                required
-              />
-            </div>
-
-            
-
-            <button
-              type="submit"
-              className="w-full rounded-md bg-indigo-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-400 transition focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              Analyze
-            </button>
-          </form>
-        </div>
-      </main>
     </div>
   );
-}
+};
 
-export default QueryPlanner
+export default QueryPlanner;

@@ -29,7 +29,7 @@ const DbConnector = () => {
       });
       
       const res = await resp.json();
-      console.log(res);
+      //console.log(res);
 
       if (resp.ok) {
         navigate("/QueryPlanner");

@@ -6,39 +6,41 @@ queryParser = Blueprint("parser", __name__)
 
 @queryParser.route("/queryPlanner",methods = ["POST"])
 
+@queryParser.route("/queryPlanner", methods=["POST"])
 def queryExecutor():
     try:
         data = request.get_json()
         query = data.get("query")
-        if(QueryParse.checkQuery(query)):
-            #session storage comes in play
-            dbConnection = DBConnector(host,database,port,username,password)
-            try:
-                connection = dbConnection.connectTODB()
-                cursor = connection.cursor()
-                cursor.execute(f"EXPLAIN (ANALYZE, VERBOSE, BUFFERS, FORMAT JSON) {query}")
-                plan = cursor.fetchone()[0]   
-                cursor.close()
-                return jsonify({"status": "successfully executed in db" , "plan":plan}),200
-            except Exception as e:
-                print("Error while connection to postgres DB",e)
-                return jsonify({"status": "Failed to connect to DB", "error": str(e)})
-            #execute query
-
-        else:
-            
+        parser = QueryParser(query)
+        if not parser.is_sql():
+            return jsonify({"error": "Invalid SQL"}), 400
+        dbConnection = DBConnector(host, database, port, username, password)
+        plan = dbConnection.executeQueryPlan(query)
+        return jsonify({
+            "status": "success",
+            "plan": plan
+        }), 200
     except Exception as e:
-        print("Error while the sql in database",e)
+        return jsonify({"error": str(e)}), 500
 
 
-@queryparser.route("/analyze",methods=["POST"])
+
+@queryParser.route("/analyze",methods=["POST"])
 def queryAnalyze():
     try:
-        data = queryExecutor()
         #now where human chat in comes to play interaction with agent to improvise and summarize the plan
-
-        summary = analyze_with_llm(plan)
-
+            data = request.get_json()
+            query = data.get("query")
+            # parser = QueryParser(query)
+            # if not parser.is_sql():
+            #     return jsonify({"error": "Invalid SQL"}), 400
+            #bConnection = DBConnector(host, database, port, username, password)
+            dbConnection = DBConnector(host, database, port, username, password)
+            plan = dbConnection.executeQueryPlan(query)
+            summary = LLMAgent.analyze_with_llm(plan)
+            return jsonify({
+                "plan": plan,
+                "summary": summary
+            }), 200
     except Exception as e:
-        print("Error while analyzing query in database",e)
-        
+        return jsonify({"error": str(e)}), 500

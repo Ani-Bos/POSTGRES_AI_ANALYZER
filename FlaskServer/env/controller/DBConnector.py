@@ -17,6 +17,16 @@ class DBConnector:
             password=self.password
         )
     
-
+    def executeQueryPlan(self, query):
+        try:
+            connection = self.connectTODB()
+            cursor = connection.cursor()
+            cursor.execute(f"EXPLAIN (ANALYZE, VERBOSE, BUFFERS, FORMAT JSON) {query}")
+            plan = cursor.fetchone()[0]   
+            cursor.close()
+            return plan
+        except Exception as e:
+            print("Error while connection to postgres DB",e)
+            raise e
 
       
