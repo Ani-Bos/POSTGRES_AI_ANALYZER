@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from controller.QueryParser import QueryParser
-from controller.DBConnector import DBConnector
+from controller.DBConnector import DBConnector\
+from controller.LLMAgent import LLMAgent
 
 queryParser = Blueprint("parser", __name__)
 
