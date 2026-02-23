@@ -7,6 +7,10 @@ import {
 import Home from "./components/Home";
 import QueryPlanner from "./components/QueryPlanner";
 import DbConnector from "./components/DbConnector";
+import "prismjs/themes/prism-tomorrow.css";
+import "prismjs/plugins/line-numbers/prism-line-numbers.css";
+import Prism from "prismjs";
+import "prismjs/components/prism-sql";
 
 function App() {
   return (
