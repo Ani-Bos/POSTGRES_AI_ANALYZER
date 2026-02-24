@@ -11,7 +11,7 @@ import "prismjs/themes/prism-tomorrow.css";
 import "prismjs/plugins/line-numbers/prism-line-numbers.css";
 import Prism from "prismjs";
 import "prismjs/components/prism-sql";
-
+import ChatInterface from "./components/ChatInterface";
 function App() {
   return (
     <Router>
@@ -19,6 +19,7 @@ function App() {
         <Route exact path="/" element={<Home />} />
         <Route path="/DBConnector" element={<DbConnector />} />
         <Route path="/QueryPlanner" element={<QueryPlanner />} />
+        <Route path="/ChatInterface" element={<ChatInterface />} />
       </Routes>
     </Router>
   );

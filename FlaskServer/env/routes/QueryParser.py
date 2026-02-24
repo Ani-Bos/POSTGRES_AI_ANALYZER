@@ -103,3 +103,39 @@ def queryAnalyze():
             }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@queryParser.route("/chat", methods=["POST"])
+def chatwithLLM():
+    try:
+        data = request.get_json()
+        message = data.get("message")
+        response = llm_agent.chat(message)
+        return jsonify({
+            "response": response
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@queryParser.route("/textToSQL", methods=["post"])
+def convertNonSQL():
+    try:
+        print("Entering into text to sql and applyt changes")
+        data = request.get_json()
+        message = data.get("message")
+        sql_query = llm_agent.text_to_sql(message)
+        query1 = QueryParser(sql_query)
+        if not query1.is_sql():
+            return jsonify({"error": "Invalid SQL"}), 400
+        dbConnection = DBConnector("127.0.0.1","postgres", 5432, "postgres", "postgres")
+        conn = dbConnection.get_connection()
+        cursor = conn.cursor()
+        cursor.execute(query1)
+        response = cursor.fetchall()
+        response = llm_agent.chat(message)
+        return jsonify({
+            "response": response
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
