@@ -11,14 +11,14 @@ const ChatInterface = () => {
     setChatResponse("");
 
     try {
-      const res = await fetch("http://localhost:5000/chat", {
+      console.log("Sending query to backend:", query);
+      const res = await fetch("http://localhost:5000/textToSQL", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: query }), // FIXED
+        body: JSON.stringify({ message: query }), 
       });
-
       const resp = await res.json();
-
+      console.log("response is",resp.response)
       if (resp.error) {
         setChatResponse(resp.error);
       } else {

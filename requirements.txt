@@ -1,4 +1,5 @@
 flask
+flask-cors
 psycopg2-binary
 langchain
 langchain-community
@@ -7,3 +8,5 @@ pgvector
 python-dotenv
 langchain-classic
 langchain-core
+sqlglot
+langchain-postgres
