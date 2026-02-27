@@ -4,6 +4,8 @@ from langchain_classic.memory import VectorStoreRetrieverMemory, ConversationBuf
 # from langchain.chains import ConversationChain
 from langchain_classic.chains import ConversationChain
 from langchain_core.documents import Document
+from controller.DBConnector import DBConnector
+from controller.QueryParser import QueryParser
 import os
 from dotenv import load_dotenv
 
@@ -26,23 +28,22 @@ class LLMAgent:
 
         CONNECTION_STRING = "postgresql+psycopg2://postgres:postgres@db:5432/postgres"
         collection_name = "chat_memory"
-        vector_store = PGVector(
+
+        self.vectorstore = PGVector(
             embeddings=embeddings,
             collection_name=collection_name,
             connection=CONNECTION_STRING,
             use_jsonb=True,
         )
 
-        self.retriever = vector_store.as_retriever(
-            search_kwargs={"k": 5}
-        )
+        self.retriever = self.vectorstore.as_retriever(search_kwargs={"k": 5})
+
         self.memory = ConversationBufferMemory(
             memory_key="history",
             return_messages=True
         )
 
     def text_to_sql(self, message: str):
-
         prompt = f"""
         You are a PostgreSQL expert.
 
@@ -60,7 +61,6 @@ class LLMAgent:
 
         response = self.model.invoke(prompt)
         sql = response.content.strip()
-
         sql = sql.replace("```sql", "").replace("```", "").strip()
 
         return sql
@@ -69,15 +69,10 @@ class LLMAgent:
     def chat(self, message: str):
 
         docs = self.retriever.get_relevant_documents(message)
+        long_term_context = "\n".join([doc.page_content for doc in docs])
 
-        long_term_context = "\n".join(
-            [doc.page_content for doc in docs]
-        )
-
- 
         history_data = self.memory.load_memory_variables({})
         chat_history = history_data.get("history", "")
-
 
         prompt = f"""
         You are an intelligent SQL assistant.
@@ -92,9 +87,8 @@ class LLMAgent:
         Assistant:
         """
 
-
         response = self.model.invoke(prompt)
-        answer = response.content
+        answer = response.content.strip()
 
         self.memory.save_context(
             {"input": message},
@@ -107,6 +101,52 @@ class LLMAgent:
                 metadata={"type": "conversation"}
             )
         ])
+
+        return answer
+
+    def ask_database(self, message: str):
+
+        sql_query = self.text_to_sql(message)
+
+        query1 = QueryParser(sql_query)
+        if not query1.checkQuery():
+            return "Invalid SQL generated."
+
+        dbConnection = DBConnector("db", "postgres", 5432, "postgres", "postgres")
+        conn = dbConnection.get_connection()
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute(sql_query)
+            conn.commit()
+            result = cursor.fetchall()
+            print(result)
+        except Exception as e:
+            conn.rollback()
+            return f"SQL Execution Error: {str(e)}"
+
+        explanation_prompt = f"""
+        You are an intelligent PostgreSQL assistant.
+
+        User asked:
+        {message}
+
+        SQL executed:
+        {sql_query}
+
+        Database returned:
+        {result}
+
+        Explain this clearly and naturally.
+        """
+
+        response = self.model.invoke(explanation_prompt)
+        answer = response.content.strip()
+
+        self.memory.save_context(
+            {"input": message},
+            {"output": answer}
+        )
 
         return answer
 

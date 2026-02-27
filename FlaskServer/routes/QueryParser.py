@@ -110,7 +110,7 @@ def chatwithLLM():
     try:
         data = request.get_json()
         message = data.get("message")
-        response = llm_agent.chat(message)
+        response = llm_agent.ask_database(message)
         return jsonify({
             "response": response
         }), 200
