@@ -22,7 +22,7 @@ services:
     depends_on:
       - db
     environment:
-      GEMINI_API_KEY: 
+      GEMINI_API_KEY: AIzaSyAR5lS0gOmDiBT8x_H9jSWEF-bItPnaM38
     restart: always
 
 volumes:
