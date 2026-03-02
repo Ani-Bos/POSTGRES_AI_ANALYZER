@@ -4,9 +4,10 @@ from controller.DBConnector import DBConnector
 from agents.llmagent import LLMAgent
 import os
 import json
+from json_toon import json_to_toon
+import uuid
 queryParser = Blueprint("parser", __name__)
 llm_agent = LLMAgent() 
-
 
 @queryParser.route("/queryPlanner", methods=["POST"])
 def queryExecutor():
@@ -40,7 +41,8 @@ def queryAnalyze():
             dbConnection = DBConnector("127.0.0.1","postgres", 5432, "postgres", "postgres")
             plan = dbConnection.executeQueryPlan(query)
             print(plan)
-            formatted_plan = json.dumps(plan_json, indent=2)
+            formatted_plan = json.dumps(plan, indent=2)
+            toon_string = json_to_toon(formatted_plan)
 
             prompt = f"""
             You are a PostgreSQL query performance expert.
@@ -93,7 +95,7 @@ def queryAnalyze():
 
             Here is the EXPLAIN ANALYZE output in JSON format:
 
-            {formatted_plan}
+            {toon_string}
             """
 
             summary = llm_agent.chat(prompt)
@@ -110,11 +112,35 @@ def chatwithLLM():
     try:
         data = request.get_json()
         message = data.get("message")
+        session_id = data.get("session_id")
+        print("message and session id is", message, session_id)
+        dbConnection = DBConnector("db", "postgres", 5432, "postgres", "postgres")
+        conn = dbConnection.get_connection()
+        cursor = conn.cursor()
+        if not session_id:
+            print("entering into new session create")
+            session_id = str(uuid.uuid4())
+            cursor.execute(
+                "INSERT INTO sessions (id, title) VALUES (%s, %s)",
+                (session_id, message[:40])
+            )
+        cursor.execute(
+            "INSERT INTO messages (session_id, role, content) VALUES (%s, %s, %s)",
+            (session_id, "user", message)
+        )
         response = llm_agent.ask_database(message)
+        cursor.execute(
+            "INSERT INTO messages (session_id, role, content) VALUES (%s, %s, %s)",
+            (session_id, "assistant", response)
+        )
+        conn.commit()
+        print("response is from llm is --> ",response)
         return jsonify({
-            "response": response
+            "response": response,
+            "session_id": session_id
         }), 200
     except Exception as e:
+        conn.rollback()
         return jsonify({"error": str(e)}), 500
 
 
@@ -123,13 +149,10 @@ def convertNonSQL():
     try:
         data = request.get_json()
         message = data.get("message")
-
         sql_query = llm_agent.text_to_sql(message)
         query1 = QueryParser(sql_query)
-
         if not query1.checkQuery():
             return jsonify({"error": "Invalid SQL"}), 400
-
         dbConnection = DBConnector("db", "postgres", 5432, "postgres", "postgres")
         conn = dbConnection.get_connection()
         cursor = conn.cursor()
@@ -139,23 +162,17 @@ def convertNonSQL():
         print(result)
         explanation_prompt = f"""
         User asked: {message}
-
         SQL executed:
         {sql_query}
-
         Database result:
         {result}
-
         Explain clearly.
         """
-
         response = llm_agent.model.invoke(explanation_prompt)
         response_text = response.content.strip()
-
         return jsonify({
             "response": response_text
         }), 200
-
     except Exception as e:
         if conn:
             conn.rollback()

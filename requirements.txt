@@ -10,3 +10,4 @@ langchain-classic
 langchain-core
 sqlglot
 langchain-postgres
+json-toon

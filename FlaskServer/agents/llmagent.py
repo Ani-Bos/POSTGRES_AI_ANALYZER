@@ -6,43 +6,36 @@ from langchain_classic.chains import ConversationChain
 from langchain_core.documents import Document
 from controller.DBConnector import DBConnector
 from controller.QueryParser import QueryParser
+from json_toon import json_to_toon
 import os
+import uuid
 from dotenv import load_dotenv
-
 load_dotenv()
-
-
+ 
 class LLMAgent:
     def __init__(self):
-
         self.model = ChatGoogleGenerativeAI(
             model="gemini-2.5-flash-lite",
             google_api_key=os.getenv("GEMINI_API_KEY"),
             temperature=0.2
         )
-
         embeddings = GoogleGenerativeAIEmbeddings(
             model="models/embedding-001",
             google_api_key=os.getenv("GEMINI_API_KEY")
         )
-
         CONNECTION_STRING = "postgresql+psycopg2://postgres:postgres@db:5432/postgres"
         collection_name = "chat_memory"
-
         self.vectorstore = PGVector(
             embeddings=embeddings,
             collection_name=collection_name,
             connection=CONNECTION_STRING,
             use_jsonb=True,
         )
-
         self.retriever = self.vectorstore.as_retriever(search_kwargs={"k": 5})
-
         self.memory = ConversationBufferMemory(
             memory_key="history",
             return_messages=True
         )
-
     def text_to_sql(self, message: str):
         prompt = f"""
         You are a PostgreSQL expert.
@@ -58,25 +51,18 @@ class LLMAgent:
 
         SQL:
         """
-
         response = self.model.invoke(prompt)
         sql = response.content.strip()
         sql = sql.replace("```sql", "").replace("```", "").strip()
-
         return sql
 
-
     def chat(self, message: str):
-
         docs = self.retriever.get_relevant_documents(message)
         long_term_context = "\n".join([doc.page_content for doc in docs])
-
         history_data = self.memory.load_memory_variables({})
         chat_history = history_data.get("history", "")
-
         prompt = f"""
         You are an intelligent SQL assistant.
-
         Chat History:
         {chat_history}
 
@@ -94,59 +80,58 @@ class LLMAgent:
             {"input": message},
             {"output": answer}
         )
-
         self.vectorstore.add_documents([
             Document(
                 page_content=f"User: {message}\nAssistant: {answer}",
                 metadata={"type": "conversation"}
             )
         ])
-
         return answer
 
     def ask_database(self, message: str):
-
         sql_query = self.text_to_sql(message)
-
         query1 = QueryParser(sql_query)
         if not query1.checkQuery():
             return "Invalid SQL generated."
-
         dbConnection = DBConnector("db", "postgres", 5432, "postgres", "postgres")
         conn = dbConnection.get_connection()
         cursor = conn.cursor()
-
         try:
             cursor.execute(sql_query)
             conn.commit()
             result = cursor.fetchall()
             print(result)
+            toon_string = json_to_toon(result)
         except Exception as e:
             conn.rollback()
             return f"SQL Execution Error: {str(e)}"
 
         explanation_prompt = f"""
-        You are an intelligent PostgreSQL assistant.
+        You are an expert PostgreSQL expert.
+        Provide a structured summary using EXACTLY this format:
 
-        User asked:
+        - Row Count:
+        - Key Columns:
+        - Important Observations:
+        - Notable Patterns:
+        - Suggested Follow-up (if applicable):
+
+        Keep it concise.
+        No introduction.
+        No conclusion.
+        Only bullet points.
+
+        User Question:
         {message}
 
-        SQL executed:
-        {sql_query}
-
-        Database returned:
-        {result}
-
-        Explain this clearly and naturally.
+        Result:
+        {toon_string}
         """
-
         response = self.model.invoke(explanation_prompt)
         answer = response.content.strip()
-
         self.memory.save_context(
             {"input": message},
             {"output": answer}
         )
-
         return answer
 
