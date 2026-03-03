@@ -15,3 +15,5 @@ docker compose down
 docker compose up
 docker compose up --build
 
+
+(1 row)

@@ -9,14 +9,16 @@ const ChatInterface = () => {
   const [loading, setLoading] = useState(false);
   const [sidebar, setSidebar] = useState(false);
   const toggleSidebar = () => setSidebar(!sidebar);
-  useEffect(() => {
-    if (sidebar) {
-      console.log("eNTERING into fetching sessions data")
-      fetch("http://localhost:5000/session")
-        .then((res) => res.json())
-        .then((data) => setSessions(data.sessions));
-    }
-  }, [sidebar]);
+ useEffect(() => {
+   if (sidebar) {
+     fetch("http://localhost:5000/session")
+       .then((res) => res.json())
+       .then((data) => {
+         console.log(data)
+         setSessions(data.sessions);
+       });
+   }
+ }, [sidebar]);
   const loadSession = async (id) => {
     console.log("eNTERING into fetching sessions data using session id");
     const res = await fetch(`http://localhost:5000/session/${id}`);
@@ -54,9 +56,10 @@ const ChatInterface = () => {
 
       setMessages((prev) => [...prev, botMessage]);
     } catch (e) {
+      console.error("Chat error:", e);
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "Something went wrong." ,e},
+        { role: "assistant", content: "Something went wrong. Please try again." },
       ]);
     }
 

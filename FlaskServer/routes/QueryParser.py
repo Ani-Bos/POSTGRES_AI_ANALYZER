@@ -124,10 +124,12 @@ def chatwithLLM():
                 "INSERT INTO sessions (id, title) VALUES (%s, %s)",
                 (session_id, message[:40])
             )
+            conn.commit()
         cursor.execute(
             "INSERT INTO messages (session_id, role, content) VALUES (%s, %s, %s)",
             (session_id, "user", message)
         )
+        conn.commit()
         response = llm_agent.ask_database(message)
         cursor.execute(
             "INSERT INTO messages (session_id, role, content) VALUES (%s, %s, %s)",
